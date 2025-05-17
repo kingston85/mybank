@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingston Bank - Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+        }
+        .content {
+            transition: all 0.3s ease;
+        }
+        .content.expanded {
+            margin-left: 80px;
+        }
+        .dropdown-content {
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .table-container {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        .transaction-type-deposit {
+            color: #10b981;
+        }
+        .transaction-type-withdrawal {
+            color: #ef4444;
+        }
+        .transaction-type-transfer {
+            color: #3b82f6;
+        }
+        .account-status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .account-status-frozen {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .account-status-closed {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .customer-status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .customer-status-suspended {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .customer-status-closed {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .chart-container {
+            height: 300px;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Admin Login</h2>
+                <button onclick="closeLoginModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="loginForm" class="space-y-4" onsubmit="handleAdminLogin(event)">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar bg-blue-800 text-white w-64 flex flex-col">
+            <!-- Logo -->
+            <div class="p-4 flex items-center space-x-2 border-b border-blue-700">
+                <div class="bg-white p-2 rounded-lg">
+                    <i class="fas fa-university text-blue-800 text-xl"></i>
+                </div>
+                <span class="logo-text text-xl font-bold">Kingston Bank</span>
+            </div>
+            
+            <!-- Admin Info -->
+            <div id="adminInfo" class="p-4 border-b border-blue-700 hidden">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <div class="font-medium" id="adminName">Admin Name</div>
+                        <div class="text-xs text-blue-200" id="adminEmail">admin@kingstonbank.com</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-2">
+                <ul class="space-y-1 px-2">
+                    <li>
+                        <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center px-3 py-2 text-sm font-medium rounded-md bg-blue-700 text-white">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <li class="dropdown">
+                        <a href="#" class="nav-item flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-700 text-white">
+                            <i class="fas fa-users mr-3"></i>
+                            <span class="nav-text">Customer Management</span>
+                            <i class="fas fa-chevron-down ml-auto"></i>
+                        </a>
+                        <ul class="dropdown-content pl-4 mt-1 space-y-1">
+                            <li><a href="#" onclick="showSection('allCustomers')" class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-700 text-white"><i class="fas fa-list mr-2"></i> All Customers</a></li>
+                            <li><a href="#" onclick="showSection('searchCustomers')" class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-700 text-white"><i class="fas fa-search mr-2"></i> Search Customers</a></li>
+                            <li><a href="#" onclick="showAddCustomerModal()" class="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-700 text-white"><i class="fas fa-user-plus mr-2"></i> Add Customer</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Rest of sidebar navigation remains similar with onclick handlers -->
+                    
+                </ul>
+            </nav>
+            
+            <!-- Collapse Button -->
+            <div class="p-4 border-t border-blue-700">
+                <button id="toggleSidebar" class="w-full flex items-center justify-center text-blue-200 hover:text-white">
+                    <i class="fas fa-chevron-left"></i>
+                    <span class="nav-text ml-2">Collapse</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div id="content" class="content flex-1 flex flex-col overflow-hidden">
+            <!-- Top Navigation -->
+            <header class="bg-white shadow-sm">
+                <div class="flex items-center justify-between px-6 py-3">
+                    <div class="flex items-center">
+                        <button id="mobileMenuButton" class="md:hidden text-gray-500 hover:text-gray-600 mr-2">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h1 id="pageTitle" class="text-xl font-semibold text-gray-800">Dashboard</h1>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <a href="../index.html" class="text-gray-600 hover:text-blue-600 flex items-center">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Main Site
+                        </a>
+                        <!-- Rest of header remains -->
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content Area -->
+            <main id="mainContent" class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <!-- Dynamic content sections -->
+                <div id="dashboardContent" class="space-y-6">
+                    <!-- Enhanced charts with Chart.js -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-medium text-gray-900">Customer Growth</h2>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="customerGrowthChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-medium text-gray-900">Account Distribution</h2>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="accountDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Interactive Data Tables -->
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <div class="flex items-center space-x-4">
+                                <input type="text" placeholder="Search..." class="px-4 py-2 border rounded-md" id="searchInput">
+                                <select class="px-4 py-2 border rounded-md" id="statusFilter">
+                                    <option value="">All Statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <!-- Table content loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add Customer Modal -->
+                <div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                    <div class="bg-white rounded-lg w-full max-w-md p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Add New Customer</h2>
+                            <button onclick="closeModal('addCustomerModal')" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <form id="addCustomerForm" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">First Name</label>
+                                    <input type="text" required class="w-full px-3 py-2 border rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Last Name</label>
+                                    <input type="text" required class="w-full px-3 py-2 border rounded-md">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email</label>
+                                <input type="email" required class="w-full px-3 py-2 border rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone</label>
+                                <input type="tel" required class="w-full px-3 py-2 border rounded-md">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                                Create Customer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Admin System Simulation
+        class AdminSystem {
+            constructor() {
+                this.customers = [];
+                this.accounts = [];
+                this.transactions = [];
+                this.loadSampleData();
+            }
+
+            loadSampleData() {
+                // Sample data for demonstration
+                this.customers = [...Array(50)].map((_, i) => ({
+                    id: `CUS-${1000 + i}`,
+                    name: `Customer ${i + 1}`,
+                    email: `customer${i + 1}@example.com`,
+                    status: ['active', 'suspended', 'closed'][i % 3],
+                    accounts: Math.floor(Math.random() * 3) + 1,
+                    joined: new Date().toISOString()
+                }));
+
+                this.accounts = [...Array(100)].map((_, i) => ({
+                    id: `ACC-${2000 + i}`,
+                    type: ['Checking', 'Savings', 'Loan'][i % 3],
+                    balance: Math.floor(Math.random() * 10000) + 1000,
+                    status: ['active', 'frozen', 'closed'][i % 3],
+                    customer: `CUS-${1000 + (i % 50)}`
+                }));
+            }
+
+            // Add other admin methods as needed
+        }
+
+        // Chart Initialization
+        function initCharts() {
+            // Customer Growth Chart
+            new Chart(document.getElementById('customerGrowthChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'New Customers',
+                        data: [65, 59, 80, 81, 56, 55],
+                        borderColor: '#3b82f6',
+                        tension: 0.4
+                    }]
+                }
+            });
+
+            // Account Distribution Chart
+            new Chart(document.getElementById('accountDistributionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Checking', 'Savings', 'Loans'],
+                    datasets: [{
+                        data: [300, 150, 50],
+                        backgroundColor: ['#3b82f6', '#10b981', '#6366f1']
+                    }]
+                }
+            });
+        }
+
+        // Modal Handling
+        function showAddCustomerModal() {
+            document.getElementById('addCustomerModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            // Initialize other components
+        });
+
+        // Sidebar Toggle
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('content').classList.toggle('expanded');
+        });
+
+        // Form Submission Handling
+        document.getElementById('addCustomerForm').addEventListener('submit', e => {
+            e.preventDefault();
+            // Handle form submission
+            closeModal('addCustomerModal');
+        });
+
+        // Initialization
+        const adminSystem = new AdminSystem();
+    </script>
+</body>
+</html>

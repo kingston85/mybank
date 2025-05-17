@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingston Bank - Online Banking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        .account-card {
+            transition: all 0.3s ease;
+        }
+        .account-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .transaction-item {
+            border-left: 4px solid transparent;
+        }
+        .transaction-item.deposit {
+            border-left-color: #10b981;
+        }
+        .transaction-item.withdrawal {
+            border-left-color: #ef4444;
+        }
+        .transaction-item.transfer_in {
+            border-left-color: #3b82f6;
+        }
+        .transaction-item.transfer_out {
+            border-left-color: #f59e0b;
+        }
+        .transaction-item.admin_adjustment_credit {
+            border-left-color: #8b5cf6;
+        }
+        .transaction-item.admin_adjustment_debit {
+            border-left-color: #ec4899;
+        }
+        .slide-in {
+            animation: slideIn 0.3s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .admin-bg {
+            background: linear-gradient(135deg, #4c1d95 0%, #7e22ce 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Main Container -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="gradient-bg text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-university text-2xl"></i>
+                    <h1 class="text-2xl font-bold">Kingston Bank</h1>
+                </div>
+                <div id="auth-buttons" class="flex space-x-4">
+                    <button onclick="showAuthModal('login')" class="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100 transition">Login</button>
+                    <button onclick="showAuthModal('register')" class="px-4 py-2 border border-white text-white rounded-lg font-medium hover:bg-blue-700 transition">Register</button>
+                    <button onclick="showAdminLoginModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition">Admin</button>
+                </div>
+                <div id="user-menu" class="hidden flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600"></i>
+                        </div>
+                        <span id="username-display" class="font-medium"></span>
+                    </div>
+                    <button onclick="logout()" class="px-3 py-1 bg-white text-blue-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition">Logout</button>
+                </div>
+                <div id="admin-menu" class="hidden flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                            <i class="fas fa-user-shield text-purple-600"></i>
+                        </div>
+                        <span id="admin-username-display" class="font-medium"></span>
+                    </div>
+                    <button onclick="adminLogout()" class="px-3 py-1 bg-white text-purple-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <!-- Welcome Section (Visible when not logged in) -->
+            <section id="welcome-section" class="text-center py-12">
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-6">Welcome to Kingston Bank</h2>
+                    <p class="text-xl text-gray-600 mb-8">Your trusted partner for secure and convenient online banking</p>
+                    <div class="flex justify-center space-x-4">
+                        <button onclick="showAuthModal('login')" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">Login to Your Account</button>
+                        <button onclick="showAuthModal('register')" class="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition">Open New Account</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard (Visible when logged in) -->
+            <section id="dashboard" class="hidden">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome back, <span id="greeting-name"></span></h2>
+                    <p class="text-gray-600">Here's an overview of your accounts</p>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <button onclick="showActionModal('deposit')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <i class="fas fa-arrow-down text-green-600"></i>
+                        </div>
+                        <span class="font-medium">Deposit</span>
+                    </button>
+                    <button onclick="showActionModal('withdraw')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                            <i class="fas fa-arrow-up text-red-600"></i>
+                        </div>
+                        <span class="font-medium">Withdraw</span>
+                    </button>
+                    <button onclick="showActionModal('transfer')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-yellow-600"></i>
+                        </div>
+                        <span class="font-medium">Transfer</span>
+                    </button>
+                    <button onclick="showActionModal('new-account')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-plus text-blue-600"></i>
+                        </div>
+                        <span class="font-medium">New Account</span>
+                    </button>
+                </div>
+
+                <!-- Accounts Summary -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">Your Accounts</h3>
+                        <button onclick="refreshAccounts()" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                    <div id="accounts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Accounts will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent Transactions</h3>
+                    <div id="transactions-container" class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <!-- Transactions will be loaded here -->
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-exchange-alt text-4xl mb-4 text-gray-300"></i>
+                            <p>No recent transactions</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Dashboard (Visible when admin logged in) -->
+            <section id="admin-dashboard" class="hidden">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Admin Dashboard</h2>
+                    <p class="text-gray-600">System administration and management</p>
+                </div>
+
+                <!-- Admin Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500">Total Customers</p>
+                                <p id="admin-total-customers" class="text-2xl font-bold">0</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-users text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500">Total Accounts</p>
+                                <p id="admin-total-accounts" class="text-2xl font-bold">0</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <i class="fas fa-wallet text-green-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500">Total Balance</p>
+                                <p id="admin-total-balance" class="text-2xl font-bold">$0.00</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                <i class="fas fa-money-bill-wave text-purple-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <button onclick="showAdminActionModal('customers')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600"></i>
+                        </div>
+                        <span class="font-medium">Manage Customers</span>
+                    </button>
+                    <button onclick="showAdminActionModal('accounts')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <i class="fas fa-wallet text-green-600"></i>
+                        </div>
+                        <span class="font-medium">Manage Accounts</span>
+                    </button>
+                    <button onclick="showAdminActionModal('transactions')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-yellow-600"></i>
+                        </div>
+                        <span class="font-medium">View Transactions</span>
+                    </button>
+                    <button onclick="showAdminActionModal('reports')" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-3 hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                            <i class="fas fa-chart-bar text-purple-600"></i>
+                        </div>
+                        <span class="font-medium">System Reports</span>
+                    </button>
+                </div>
+
+                <!-- Recent System Activity -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent System Activity</h3>
+                    <div id="admin-activity-container" class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-history text-4xl mb-4 text-gray-300"></i>
+                            <p>No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-8">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Kingston Bank</h3>
+                        <p class="text-gray-400">Providing secure and reliable banking services since 1985.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Services</h3>
+                        <ul class="space-y-2 text-gray-400">
+                            <li><a href="#" class="hover:text-white transition">Personal Banking</a></li>
+                            <li><a href="#" class="hover:text-white transition">Business Banking</a></li>
+                            <li><a href="#" class="hover:text-white transition">Loans</a></li>
+                            <li><a href="#" class="hover:text-white transition">Investments</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Support</h3>
+                        <ul class="space-y-2 text-gray-400">
+                            <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
+                            <li><a href="#" class="hover:text-white transition">FAQs</a></li>
+                            <li><a href="#" class="hover:text-white transition">Security</a></li>
+                            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-600 transition">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-400 transition">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-pink-600 transition">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-red-600 transition">
+                                <i class="fab fa-youtube"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                    <p>&copy; 2023 Kingston Bank. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md overflow-hidden slide-in">
+            <div class="flex border-b">
+                <button id="login-tab" class="flex-1 py-4 font-medium text-center border-b-2 border-blue-600 text-blue-600">Login</button>
+                <button id="register-tab" class="flex-1 py-4 font-medium text-center border-b-2 border-transparent text-gray-500">Register</button>
+            </div>
+            <div class="p-6">
+                <!-- Login Form -->
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="login-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">Login</button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="space-y-4 hidden">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="register-first-name" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input type="text" id="register-first-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="register-last-name" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input type="text" id="register-last-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="register-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="register-phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <input type="tel" id="register-phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="register-address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input type="text" id="register-address" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="register-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="register-confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                        <input type="password" id="register-confirm-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md overflow-hidden slide-in">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-user-shield text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800">Admin Login</h3>
+                </div>
+                <form id="admin-login-form" class="space-y-4">
+                    <div>
+                        <label for="admin-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="admin-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                    </div>
+                    <div>
+                        <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="admin-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Modal -->
+    <div id="action-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md overflow-hidden slide-in">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="action-title" class="text-xl font-semibold text-gray-800">Action</h3>
+                    <button onclick="hideActionModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Deposit Form -->
+                <form id="deposit-form" class="space-y-4 hidden">
+                    <div>
+                        <label for="deposit-account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <select id="deposit-account" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <!-- Accounts will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="deposit-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" id="deposit-amount" min="0.01" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="deposit-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" id="deposit-description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional">
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">Deposit</button>
+                </form>
+
+                <!-- Withdraw Form -->
+                <form id="withdraw-form" class="space-y-4 hidden">
+                    <div>
+                        <label for="withdraw-account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <select id="withdraw-account" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <!-- Accounts will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="withdraw-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" id="withdraw-amount" min="0.01" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="withdraw-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" id="withdraw-description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional">
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">Withdraw</button>
+                </form>
+
+                <!-- Transfer Form -->
+                <form id="transfer-form" class="space-y-4 hidden">
+                    <div>
+                        <label for="transfer-from" class="block text-sm font-medium text-gray-700 mb-1">From Account</label>
+                        <select id="transfer-from" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <!-- Accounts will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transfer-to" class="block text-sm font-medium text-gray-700 mb-1">To Account</label>
+                        <select id="transfer-to" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <!-- Accounts will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transfer-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" id="transfer-amount" min="0.01" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="transfer-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" id="transfer-description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional">
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition">Transfer</button>
+                </form>
+
+                <!-- New Account Form -->
+                <form id="new-account-form" class="space-y-4 hidden">
+                    <div>
+                        <label for="account-type" class="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                        <select id="account-type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="checking">Checking Account</option>
+                            <option value="savings">Savings Account</option>
+                            <option value="fixed_deposit">Fixed Deposit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="initial-deposit" class="block text-sm font-medium text-gray-700 mb-1">Initial Deposit ($)</label>
+                        <input type="number" id="initial-deposit" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">Open Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Action Modal -->
+    <div id="admin-action-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-4xl overflow-hidden slide-in">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="admin-action-title" class="text-xl font-semibold text-gray-800">Admin Action</h3>
+                    <button onclick="hideAdminActionModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Customers Management -->
+                <div id="admin-customers-section" class="hidden">
+                    <div class="mb-4 flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            <input type="text" id="admin-customer-search" placeholder="Search customers..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <button onclick="adminSearchCustomers()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <button onclick="showAdminCustomerDetailsModal('new')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-plus mr-1"></i> New Customer
+                        </button>
+                    </div>
+                    <div id="admin-customers-list" class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <!-- Customers will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Accounts Management -->
+                <div id="admin-accounts-section" class="hidden">
+                    <div class="mb-4 flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            <input type="text" id="admin-account-search" placeholder="Search accounts..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <button onclick="adminSearchAccounts()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="admin-accounts-list" class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <!-- Accounts will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Transactions Management -->
+                <div id="admin-transactions-section" class="hidden">
+                    <div class="mb-4 flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            <input type="text" id="admin-transaction-search" placeholder="Search transactions..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <button onclick="adminSearchTransactions()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <select id="admin-transaction-type-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                <option value="">All Types</option>
+                                <option value="deposit">Deposits</option>
+                                <option value="withdrawal">Withdrawals</option>
+                                <option value="transfer_in">Transfers In</option>
+                                <option value="transfer_out">Transfers Out</option>
+                                <option value="admin_adjustment_credit">Admin Credits</option>
+                                <option value="admin_adjustment_debit">Admin Debits</option>
+                            </select>
+                            <input type="number" id="admin-transaction-min-amount" placeholder="Min $" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-24">
+                            <input type="number" id="admin-transaction-max-amount" placeholder="Max $" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-24">
+                        </div>
+                    </div>
+                    <div id="admin-transactions-list" class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <!-- Transactions will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Reports -->
+                <div id="admin-reports-section" class="hidden">
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-800 mb-2">Generate System Reports</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button onclick="adminGenerateReport('customer_summary')" class="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-users text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Customer Summary</p>
+                                        <p class="text-sm text-gray-500">Overview of all customers</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button onclick="adminGenerateReport('account_summary')" class="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                        <i class="fas fa-wallet text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Account Summary</p>
+                                        <p class="text-sm text-gray-500">Overview of all accounts</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button onclick="adminGenerateReport('transaction_summary')" class="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                        <i class="fas fa-exchange-alt text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Transaction Summary</p>
+                                        <p class="text-sm text-gray-500">Overview of all transactions</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="admin-report-results" class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto hidden">
+                        <h4 class="font-medium text-gray-800 mb-4">Report Results</h4>
+                        <div id="admin-report-content">
+                            <!-- Report content will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Customer Details Modal -->
+    <div id="admin-customer-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-2xl overflow-hidden slide-in">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="admin-customer-details-title" class="text-xl font-semibold text-gray-800">Customer Details</h3>
+                    <button onclick="hideAdminCustomerDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="admin-customer-details-form" class="space-y-4">
+                    <input type="hidden" id="admin-customer-id">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="admin-customer-first-name" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input type="text" id="admin-customer-first-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                        </div>
+                        <div>
+                            <label for="admin-customer-last-name" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input type="text" id="admin-customer-last-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="admin-customer-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="admin-customer-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                    </div>
+                    <div>
+                        <label for="admin-customer-phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <input type="tel" id="admin-customer-phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                    </div>
+                    <div>
+                        <label for="admin-customer-address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input type="text" id="admin-customer-address" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
+                    </div>
+                    <div>
+                        <label for="admin-customer-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="admin-customer-status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div id="admin-customer-accounts-section" class="hidden">
+                        <h4 class="font-medium text-gray-800 mb-2">Customer Accounts</h4>
+                        <div id="admin-customer-accounts-list" class="bg-gray-50 rounded-lg p-4">
+                            <!-- Accounts will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="hideAdminCustomerDetailsModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Account Details Modal -->
+    <div id="admin-account-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-2xl overflow-hidden slide-in">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="admin-account-details-title" class="text-xl font-semibold text-gray-800">Account Details</h3>
+                    <button onclick="hideAdminAccountDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="admin-account-details-form" class="space-y-4">
+                    <input type="hidden" id="admin-account-id">
+                    <div>
+                        <label for="admin-account-customer" class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                        <input type="text" id="admin-account-customer" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label for="admin-account-type" class="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                        <select id="admin-account-type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                            <option value="fixed_deposit">Fixed Deposit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="admin-account-balance" class="block text-sm font-medium text-gray-700 mb-1">Balance ($)</label>
+                        <input type="number" id="admin-account-balance" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label for="admin-account-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="admin-account-status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="active">Active</option>
+                            <option value="frozen">Frozen</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div id="admin-account-transactions-section" class="hidden">
+                        <h4 class="font-medium text-gray-800 mb-2">Recent Transactions</h4>
+                        <div id="admin-account-transactions-list" class="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                            <!-- Transactions will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="hideAdminAccountDetailsModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Balance Adjustment Modal -->
+    <div id="admin-balance-adjustment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md overflow-hidden slide-in">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Adjust Account Balance</h3>
+                    <button onclick="hideAdminBalanceAdjustmentModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="admin-balance-adjustment-form" class="space-y-4">
+                    <input type="hidden" id="admin-adjustment-account-id">
+                    <div>
+                        <label for="admin-adjustment-type" class="block text-sm font-medium text-gray-700 mb-1">Adjustment Type</label>
+                        <select id="admin-adjustment-type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                            <option value="credit">Credit (Add Funds)</option>
+                            <option value="debit">Debit (Remove Funds)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="admin-adjustment-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" id="admin-adjustment-amount" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" step="0.01" min="0.01" required>
+                    </div>
+                    <div>
+                        <label for="admin-adjustment-reason" class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                        <textarea id="admin-adjustment-reason" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" rows="3" required></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="hideAdminBalanceAdjustmentModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">Apply Adjustment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Notification -->
+    <div id="success-notification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 z-50 hidden">
+        <i class="fas fa-check-circle"></i>
+        <span id="success-message">Operation completed successfully</span>
+    </div>
+
+    <!-- Error Notification -->
+    <div id="error-notification" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 z-50 hidden">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="error-message">An error occurred</span>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span>Processing...</span>
+        </div>
+    </div>
+
+    <script>
+        // Bank System Simulation
+        class KingstonBank {
+            constructor() {
+                this.customers = {};
+                this.accounts = {};
+                this.transactions = [];
+                this.loggedInCustomer = null;
+                this.loadData();
+            }
+
+            loadData() {
+                const data = localStorage.getItem('kingston_bank_data');
+                if (data) {
+                    try {
+                        const parsedData = JSON.parse(data);
+                        this.customers = parsedData.customers || {};
+                        this.accounts = parsedData.accounts || {};
+                        this.transactions = parsedData.transactions || [];
+                    } catch (e) {
+                        console.error("Error loading data:", e);
+                    }
+                }
+            }
+
+            saveData() {
+                const data = {
+                    customers: this.customers,
+                    accounts: this.accounts,
+                    transactions: this.transactions
+                };
+                localStorage.setItem('kingston_bank_data', JSON.stringify(data));
+            }
+
+            createCustomer(firstName, lastName, email, phone, address, password) {
+                if (!firstName || !lastName || !email || !phone || !address || !password) {
+                    return { success: false, message: "All fields are required" };
+                }
+
+                // Simple email validation
+                if (!email.includes('@') || !email.includes('.')) {
+                    return { success: false, message: "Invalid email format" };
+                }
+
+                // Check if email exists
+                for (const customerId in this.customers) {
+                    if (this.customers[customerId].email === email) {
+                        return { success: false, message: "Email already registered" };
+                    }
+                }
+
+                if (password !== document.getElementById('register-confirm-password').value) {
+                    return { success: false, message: "Passwords don't match" };
+                }
+
+                const customerId = 'c' + Date.now().toString();
+                this.customers[customerId] = {
+                    firstName,
+                    lastName,
+                    email,
+                    phone,
+                    address,
+                    password,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                };
+
+                this.saveData();
+                return { success: true, customerId };
+            }
+
+            authenticate(email, password) {
+                for (const customerId in this.customers) {
+                    const customer = this.customers[customerId];
+                    if (customer.email === email && customer.password === password) {
+                        if (customer.status === 'suspended') {
+                            return { success: false, message: "Account suspended. Please contact support." };
+                        }
+                        if (customer.status === 'closed') {
+                            return { success: false, message: "Account closed. Please contact support." };
+                        }
+                        this.loggedInCustomer = customerId;
+                        return { success: true, customerId, customer };
+                    }
+                }
+                return { success: false, message: "Invalid email or password" };
+            }
+
+            logout() {
+                this.loggedInCustomer = null;
+                return { success: true };
+            }
+
+            createAccount(accountType, initialDeposit = 0) {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                if (initialDeposit < 0) {
+                    return { success: false, message: "Initial deposit cannot be negative" };
+                }
+
+                const accountId = 'a' + Date.now().toString();
+                this.accounts[accountId] = {
+                    customerId: this.loggedInCustomer,
+                    accountType,
+                    balance: initialDeposit,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                };
+
+                if (initialDeposit > 0) {
+                    this.recordTransaction(
+                        accountId,
+                        'deposit',
+                        initialDeposit,
+                        'Initial deposit'
+                    );
+                }
+
+                this.saveData();
+                return { success: true, accountId };
+            }
+
+            getCustomerAccounts() {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                const customerAccounts = [];
+                for (const accountId in this.accounts) {
+                    const account = this.accounts[accountId];
+                    if (account.customerId === this.loggedInCustomer) {
+                        customerAccounts.push({
+                            accountId,
+                            ...account
+                        });
+                    }
+                }
+
+                return { success: true, accounts: customerAccounts };
+            }
+
+            deposit(accountId, amount, description = 'Deposit') {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                if (!this.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                const account = this.accounts[accountId];
+                if (account.customerId !== this.loggedInCustomer) {
+                    return { success: false, message: "Unauthorized access" };
+                }
+
+                if (account.status !== 'active') {
+                    return { success: false, message: "Account is not active" };
+                }
+
+                if (amount <= 0) {
+                    return { success: false, message: "Amount must be positive" };
+                }
+
+                account.balance += amount;
+                this.recordTransaction(
+                    accountId,
+                    'deposit',
+                    amount,
+                    description
+                );
+
+                this.saveData();
+                return { success: true, newBalance: account.balance };
+            }
+
+            withdraw(accountId, amount, description = 'Withdrawal') {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                if (!this.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                const account = this.accounts[accountId];
+                if (account.customerId !== this.loggedInCustomer) {
+                    return { success: false, message: "Unauthorized access" };
+                }
+
+                if (account.status !== 'active') {
+                    return { success: false, message: "Account is not active" };
+                }
+
+                if (amount <= 0) {
+                    return { success: false, message: "Amount must be positive" };
+                }
+
+                if (account.balance < amount) {
+                    return { success: false, message: "Insufficient funds" };
+                }
+
+                account.balance -= amount;
+                this.recordTransaction(
+                    accountId,
+                    'withdrawal',
+                    amount,
+                    description
+                );
+
+                this.saveData();
+                return { success: true, newBalance: account.balance };
+            }
+
+            transfer(fromAccountId, toAccountId, amount, description = 'Transfer') {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                if (!this.accounts[fromAccountId] || !this.accounts[toAccountId]) {
+                    return { success: false, message: "One or both accounts not found" };
+                }
+
+                const fromAccount = this.accounts[fromAccountId];
+                if (fromAccount.customerId !== this.loggedInCustomer) {
+                    return { success: false, message: "Unauthorized access" };
+                }
+
+                if (fromAccount.status !== 'active' || this.accounts[toAccountId].status !== 'active') {
+                    return { success: false, message: "One or both accounts are not active" };
+                }
+
+                if (amount <= 0) {
+                    return { success: false, message: "Amount must be positive" };
+                }
+
+                if (fromAccount.balance < amount) {
+                    return { success: false, message: "Insufficient funds" };
+                }
+
+                const toAccount = this.accounts[toAccountId];
+                fromAccount.balance -= amount;
+                toAccount.balance += amount;
+
+                this.recordTransaction(
+                    fromAccountId,
+                    'transfer_out',
+                    amount,
+                    `${description} to ${toAccountId}`
+                );
+
+                this.recordTransaction(
+                    toAccountId,
+                    'transfer_in',
+                    amount,
+                    `${description} from ${fromAccountId}`
+                );
+
+                this.saveData();
+                return { success: true, fromBalance: fromAccount.balance, toBalance: toAccount.balance };
+            }
+
+            recordTransaction(accountId, transactionType, amount, description) {
+                const transaction = {
+                    transactionId: 't' + Date.now().toString(),
+                    accountId,
+                    customerId: this.accounts[accountId].customerId,
+                    transactionType,
+                    amount,
+                    description,
+                    timestamp: new Date().toISOString()
+                };
+
+                this.transactions.push(transaction);
+                return transaction;
+            }
+
+            getAccountTransactions(accountId) {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                if (!this.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                const account = this.accounts[accountId];
+                if (account.customerId !== this.loggedInCustomer) {
+                    return { success: false, message: "Unauthorized access" };
+                }
+
+                const accountTransactions = this.transactions
+                    .filter(t => t.accountId === accountId)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                return { success: true, transactions: accountTransactions };
+            }
+
+            getRecentTransactions(limit = 5) {
+                if (!this.loggedInCustomer) {
+                    return { success: false, message: "Not authenticated" };
+                }
+
+                const customerTransactions = this.transactions
+                    .filter(t => this.accounts[t.accountId]?.customerId === this.loggedInCustomer)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, limit);
+
+                return { success: true, transactions: customerTransactions };
+            }
+        }
+
+        // Admin System Simulation
+        class KingstonBankAdmin {
+            constructor(bankSystem) {
+                this.bank = bankSystem;
+                this.adminCredentials = {
+                    "admin@kingstonbank.com": "admin123"
+                };
+                this.loggedInAdmin = null;
+            }
+
+            adminLogin(email, password) {
+                if (email in this.adminCredentials && this.adminCredentials[email] === password) {
+                    this.loggedInAdmin = email;
+                    return { success: true, email };
+                }
+                return { success: false, message: "Invalid admin credentials" };
+            }
+
+            adminLogout() {
+                this.loggedInAdmin = null;
+                return { success: true };
+            }
+
+            listAllCustomers() {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                const customersList = [];
+                for (const customerId in this.bank.customers) {
+                    const customerInfo = { ...this.bank.customers[customerId] };
+                    customerInfo.customerId = customerId;
+                    customersList.push(customerInfo);
+                }
+
+                return { success: true, customers: customersList };
+            }
+
+            getCustomerDetails(customerId) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                if (!this.bank.customers[customerId]) {
+                    return { success: false, message: "Customer not found" };
+                }
+
+                const customer = { ...this.bank.customers[customerId] };
+                customer.customerId = customerId;
+
+                // Get customer's accounts
+                const accounts = [];
+                for (const accountId in this.bank.accounts) {
+                    const account = this.bank.accounts[accountId];
+                    if (account.customerId === customerId) {
+                        accounts.push({
+                            accountId,
+                            ...account
+                        });
+                    }
+                }
+                customer.accounts = accounts;
+
+                return { success: true, customer };
+            }
+
+            searchCustomers(searchTerm) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                searchTerm = searchTerm.toLowerCase();
+                const results = [];
+
+                for (const customerId in this.bank.customers) {
+                    const customer = this.bank.customers[customerId];
+                    if (customer.firstName.toLowerCase().includes(searchTerm) ||
+                        customer.lastName.toLowerCase().includes(searchTerm) ||
+                        customer.email.toLowerCase().includes(searchTerm)) {
+                        const customerInfo = { ...customer };
+                        customerInfo.customerId = customerId;
+                        results.push(customerInfo);
+                    }
+                }
+
+                return { success: true, customers: results };
+            }
+
+            listAllAccounts() {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                const accountsList = [];
+                for (const accountId in this.bank.accounts) {
+                    const accountInfo = { ...this.bank.accounts[accountId] };
+                    accountInfo.accountId = accountId;
+
+                    // Add customer name
+                    const customerId = accountInfo.customerId;
+                    if (customerId in this.bank.customers) {
+                        const customer = this.bank.customers[customerId];
+                        accountInfo.customerName = `${customer.firstName} ${customer.lastName}`;
+                        accountInfo.customerEmail = customer.email;
+                    }
+
+                    accountsList.push(accountInfo);
+                }
+
+                return { success: true, accounts: accountsList };
+            }
+
+            getAccountDetails(accountId) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                if (!this.bank.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                const account = { ...this.bank.accounts[accountId] };
+                account.accountId = accountId;
+
+                // Add customer information
+                const customerId = account.customerId;
+                if (customerId in this.bank.customers) {
+                    const customer = this.bank.customers[customerId];
+                    account.customerName = `${customer.firstName} ${customer.lastName}`;
+                    account.customerEmail = customer.email;
+                }
+
+                // Get account transactions
+                const transactions = this.bank.transactions
+                    .filter(t => t.accountId === accountId)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                account.transactions = transactions;
+
+                return { success: true, account };
+            }
+
+            freezeAccount(accountId) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                if (!this.bank.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                const account = this.bank.accounts[accountId];
+
+                if (account.status === 'frozen') {
+                    return { success: false, message: "Account is already frozen" };
+                }
+
+                account.status = 'frozen';
+                this.bank.saveData();
+                return { success: true, message: `Account ${accountId} has been frozen` };
+            }
+
+            unfreezeAccount(accountId) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                if (!this.bank.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                const account = this.bank.accounts[accountId];
+
+                if (account.status !== 'frozen') {
+                    return { success: false, message: "Account is not frozen" };
+                }
+
+                account.status = 'active';
+                this.bank.saveData();
+                return { success: true, message: `Account ${accountId} has been unfrozen` };
+            }
+
+            modifyCustomerStatus(customerId, status) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                if (!this.bank.customers[customerId]) {
+                    return { success: false, message: "Customer not found" };
+                }
+
+                const validStatuses = ['active', 'suspended', 'closed'];
+                if (!validStatuses.includes(status)) {
+                    return { success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
+                }
+
+                this.bank.customers[customerId].status = status;
+                this.bank.saveData();
+                return { success: true, message: `Customer ${customerId} status updated to ${status}` };
+            }
+
+            adjustAccountBalance(accountId, amount, reason) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                if (!this.bank.accounts[accountId]) {
+                    return { success: false, message: "Account not found" };
+                }
+
+                if (!reason) {
+                    return { success: false, message: "A reason must be provided for balance adjustments" };
+                }
+
+                const account = this.bank.accounts[accountId];
+                const previousBalance = account.balance;
+                account.balance += amount;
+
+                const transactionType = amount > 0 ? 'admin_adjustment_credit' : 'admin_adjustment_debit';
+                this.bank.recordTransaction(
+                    accountId,
+                    transactionType,
+                    Math.abs(amount),
+                    `Admin adjustment: ${reason} by ${this.loggedInAdmin}`
+                );
+
+                this.bank.saveData();
+                return { 
+                    success: true, 
+                    message: `Balance adjusted from ${formatCurrency(previousBalance)} to ${formatCurrency(account.balance)}`,
+                    newBalance: account.balance
+                };
+            }
+
+            generateSystemReport(reportType) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                const report = {
+                    generatedAt: new Date().toISOString(),
+                    generatedBy: this.loggedInAdmin
+                };
+
+                if (reportType === 'customer_summary') {
+                    // Customer summary report
+                    const totalCustomers = Object.keys(this.bank.customers).length;
+                    const activeCustomers = Object.values(this.bank.customers)
+                        .filter(c => c.status === 'active').length;
+
+                    report.totalCustomers = totalCustomers;
+                    report.activeCustomers = activeCustomers;
+                    report.inactiveCustomers = totalCustomers - activeCustomers;
+                } 
+                else if (reportType === 'account_summary') {
+                    // Account summary report
+                    const accountsByType = {};
+                    let totalBalance = 0;
+
+                    for (const accountId in this.bank.accounts) {
+                        const account = this.bank.accounts[accountId];
+                        const accountType = account.accountType;
+                        
+                        if (!accountsByType[accountType]) {
+                            accountsByType[accountType] = {
+                                count: 0,
+                                totalBalance: 0
+                            };
+                        }
+
+                        accountsByType[accountType].count++;
+                        accountsByType[accountType].totalBalance += account.balance;
+                        totalBalance += account.balance;
+                    }
+
+                    report.totalAccounts = Object.keys(this.bank.accounts).length;
+                    report.accountsByType = accountsByType;
+                    report.totalBalance = totalBalance;
+                } 
+                else if (reportType === 'transaction_summary') {
+                    // Transaction summary report
+                    const transactionsByType = {};
+                    let totalAmount = 0;
+
+                    for (const transaction of this.bank.transactions) {
+                        const transactionType = transaction.transactionType;
+                        
+                        if (!transactionsByType[transactionType]) {
+                            transactionsByType[transactionType] = {
+                                count: 0,
+                                totalAmount: 0
+                            };
+                        }
+
+                        transactionsByType[transactionType].count++;
+                        transactionsByType[transactionType].totalAmount += transaction.amount;
+
+                        if (transactionType === 'deposit' || transactionType === 'transfer_in' || transactionType === 'admin_adjustment_credit') {
+                            totalAmount += transaction.amount;
+                        } else {
+                            totalAmount -= transaction.amount;
+                        }
+                    }
+
+                    report.totalTransactions = this.bank.transactions.length;
+                    report.transactionsByType = transactionsByType;
+                    report.netTransactionAmount = totalAmount;
+                } 
+                else {
+                    return { success: false, message: "Unknown report type" };
+                }
+
+                return { success: true, report };
+            }
+
+            listAllTransactions(limit = 100) {
+                if (!this.loggedInAdmin) {
+                    return { success: false, message: "Admin authentication required" };
+                }
+
+                const sortedTransactions = [...this.bank.transactions]
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, limit);
+
+                // Enrich transaction data with customer and account info
+                for (const transaction of sortedTransactions) {
+                    // Add account type
+                    const accountId = transaction.accountId;
+                    if (accountId in this.bank.accounts) {
+                        transaction.accountType = this.bank.accounts[accountId].accountType;
+                    }
+
+                    // Add customer name
+                    const customerId = transaction.customerId;
+                    if (customerId in this.bank.customers) {
+                        const customer = this.bank.customers[customerId];
+                        transaction.customerName = `${customer.firstName} ${customer.lastName}`;
+                    }
+                }
+
+                return { success: true, transactions: sortedTransactions };
+            }
+
+            search
+</html>
